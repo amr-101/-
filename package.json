@@ -1,0 +1,36 @@
+{
+  "name": "attendance-dashboard",
+  "version": "1.0.0",
+  "description": "لوحة الحضور والانصراف - برنامج سطح المكتب",
+  "author": "Attendance Dashboard",
+  "main": "main.js",
+  "scripts": {
+    "vendor": "node scripts/prepare.js",
+    "start": "node scripts/prepare.js && electron .",
+    "dist": "node scripts/prepare.js && electron-builder --publish never",
+    "dist:win": "node scripts/prepare.js && electron-builder --win --publish never",
+    "dist:mac": "node scripts/prepare.js && electron-builder --mac --publish never",
+    "dist:linux": "node scripts/prepare.js && electron-builder --linux --publish never"
+  },
+  "dependencies": {
+    "@fontsource/cairo": "^5.0.0",
+    "chart.js": "4.4.1",
+    "html2canvas": "1.4.1",
+    "jspdf": "2.5.1",
+    "xlsx": "0.18.5"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.attendance.dashboard",
+    "productName": "Attendance Dashboard",
+    "files": ["main.js", "src/**/*"],
+    "directories": { "output": "dist" },
+    "win": { "target": ["nsis", "portable"] },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true },
+    "mac": { "target": "dmg", "category": "public.app-category.business" },
+    "linux": { "target": ["AppImage", "deb"], "category": "Office" }
+  }
+}
