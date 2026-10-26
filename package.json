@@ -1,8 +1,11 @@
 {
   "name": "attendance-dashboard",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "لوحة الحضور والانصراف - برنامج سطح المكتب",
-  "author": "Attendance Dashboard",
+  "author": {
+    "name": "Eng. Amr Yousri",
+    "email": "support@attendance.local"
+  },
   "main": "main.js",
   "scripts": {
     "vendor": "node scripts/prepare.js",
@@ -26,11 +29,33 @@
   "build": {
     "appId": "com.attendance.dashboard",
     "productName": "Attendance Dashboard",
-    "files": ["main.js", "src/**/*"],
-    "directories": { "output": "dist" },
-    "win": { "target": ["nsis", "portable"] },
-    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true },
-    "mac": { "target": "dmg", "category": "public.app-category.business" },
-    "linux": { "target": ["AppImage", "deb"], "category": "Office" }
+    "files": [
+      "main.js",
+      "src/**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.business"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Office"
+    }
   }
 }
