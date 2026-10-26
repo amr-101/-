@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' blob: data:">
+<title>لوحة الحضور والانصراف</title>
+<link rel="stylesheet" href="vendor/fonts.css">
+<script src="vendor/xlsx.js"></script>
+<script src="vendor/chart.js"></script>
+<script src="vendor/jspdf.js"></script>
+<script src="vendor/html2canvas.js"></script>
+<style>
+:root{--bg:#f5f6fb;--card:#fff;--tx:#1b2033;--mut:#6b7390;--bd:#e6e8f0;--ac:#5b5bf0;--ac2:#eef0ff;--ok:#10b981;--warn:#f59e0b;--bad:#ef4444;--sh:0 1px 2px rgba(20,25,60,.04),0 8px 24px rgba(20,25,60,.06);
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1118;--card:#171b26;--tx:#e8ebf5;--mut:#98a0b8;--bd:#262c3d;--ac:#8083ff;--ac2:#1f2440;--sh:0 8px 24px rgba(0,0,0,.35)}}
+:root[data-theme="dark"]{--bg:#0e1118;--card:#171b26;--tx:#e8ebf5;--mut:#98a0b8;--bd:#262c3d;--ac:#8083ff;--ac2:#1f2440;--sh:0 8px 24px rgba(0,0,0,.35)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:'Cairo',system-ui,'Segoe UI',Tahoma,sans-serif;font-size:14px;line-height:1.6}
+.wrap{max-width:1280px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
+h1{font-size:22px;margin:0;font-weight:800}
+h1 small{display:block;font-size:12px;color:var(--mut);font-weight:400}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+button,.btn{font-family:inherit;font-size:13px;font-weight:600;border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:9px 16px;border-radius:12px;cursor:pointer;transition:.15s}
+button:hover,.btn:hover{border-color:var(--ac);color:var(--ac)}
+.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+.pri:hover{color:#fff;opacity:.9}
+button:disabled{opacity:.45;cursor:not-allowed}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:18px;box-shadow:var(--sh);padding:16px}
+.drop{border:2px dashed var(--bd);border-radius:22px;text-align:center;padding:56px 20px;background:var(--card);cursor:pointer}
+.drop.on,.drop:hover{border-color:var(--ac);background:var(--ac2)}
+.drop h2{margin:8px 0 4px;font-size:19px}.drop p{color:var(--mut);margin:4px 0}
+.ico{font-size:40px}
+code{background:var(--ac2);color:var(--ac);padding:1px 7px;border-radius:6px;font-size:12px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:14px}
+.fld{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--mut)}
+input,select{font-family:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);min-width:120px}
+input:focus,select:focus{outline:2px solid var(--ac);outline-offset:-1px}
+input[type=number]{width:80px;min-width:0}
+.sp{flex:1}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px}
+.k{padding:14px 16px}.k .l{color:var(--mut);font-size:12px}.k .v{font-size:26px;font-weight:800;line-height:1.3}.k .v small{font-size:13px;font-weight:600;color:var(--mut)}
+.k.ok .v{color:var(--ok)}.k.late .v{color:var(--warn)}.k.abs .v{color:var(--bad)}
+.charts{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:14px}
+.chb{position:relative;height:250px}
+.chb h3,.card h3{margin:0 0 8px;font-size:14px}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tabs button.act{background:var(--ac2);color:var(--ac);border-color:var(--ac)}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:720px}
+th{text-align:right;font-size:12px;color:var(--mut);font-weight:600;padding:10px 10px;border-bottom:1px solid var(--bd);white-space:nowrap;cursor:pointer;user-select:none}
+td{padding:10px;border-bottom:1px solid var(--bd);white-space:nowrap}
+tbody tr:hover{background:var(--ac2)}
+tr.cl{cursor:pointer}
+.nm b{display:block}.nm span{font-size:11px;color:var(--mut)}
+.bdg{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600}
+.b-ok{background:rgba(16,185,129,.14);color:var(--ok)}.b-late{background:rgba(245,158,11,.16);color:var(--warn)}.b-abs{background:rgba(239,68,68,.14);color:var(--bad)}
+.rate{display:flex;align-items:center;gap:8px}.rate i{display:block;height:7px;width:70px;background:var(--bd);border-radius:9px;overflow:hidden}.rate i u{display:block;height:100%;background:var(--ok);border-radius:9px}
+.note{color:var(--mut);font-size:12px;margin-top:8px}
+.mod{position:fixed;inset:0;background:rgba(10,14,30,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+.mod.on{display:flex}
+.mod .card{width:min(860px,100%);max-height:88vh;overflow:auto}
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 18px;border-radius:12px;font-weight:600;display:none;z-index:60}
+.hide{display:none!important}
+#stage{position:fixed;left:-99999px;top:0}
+@media(max-width:800px){.charts{grid-template-columns:1fr}}
+.credit{margin-top:34px;padding-top:12px;border-top:1px solid var(--bd);text-align:center;color:var(--mut);font-size:11px;opacity:.75}
+.nav,#nav{margin-bottom:14px}
+#ros input{min-width:0;width:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>لوحة الحضور والانصراف<small id="sub">ارفع ملف Excel لعرض تفاصيل الموظفين</small></h1>
+  <div class="btns">
+    <input type="file" id="file" accept=".xlsx,.xls,.csv" class="hide">
+    <button class="pri" id="up">⬆ رفع شيت Excel</button>
+        <button id="pdf" disabled>⬇ تقرير الحضور PDF</button>
+    <button id="pdf2" disabled>💰 تقرير الرواتب PDF</button>
+    <input type="file" id="rfile" accept=".xlsx,.xls,.csv" class="hide">
+  </div>
+</header>
+<div class="tabs" id="nav"><button data-v="dash" class="act">لوحة الحضور والرواتب</button><button data-v="ros">الموظفون</button></div>
+
+<div id="empty" class="drop">
+  <div class="ico">📊</div>
+  <h2>اسحب ملف الحضور هنا أو اضغط للاختيار</h2>
+  <p>الملف بصيغة <code>xlsx</code> أو <code>xls</code> أو <code>csv</code>، والصف الأول عناوين الأعمدة</p>
+  <p>الأعمدة المطلوبة: <code>الاسم</code> <code>التاريخ</code> <code>الحضور</code> <code>الانصراف</code> — واختياري: <code>الكود</code> <code>القسم</code></p>
+  <p>تُقرأ أسماء الأعمدة بالعربي أو الإنجليزي (Name, Date, Check In, Check Out, Department)</p>
+  <p>ويدعم أيضًا <b>سجل البصمات الخام</b> من أجهزة ZKTeco (عمود الوقت + عمود الحالة)، ويجمّع البصمات يوميًا تلقائيًا</p>
+</div>
+
+<div id="app" class="hide">
+  <div class="bar card" style="padding:12px 14px">
+    <div class="fld">بحث<input id="q" placeholder="اسم أو كود الموظف"></div>
+    <div class="fld">القسم<select id="dept"></select></div>
+    <div class="fld">الحالة<select id="st"><option value="">الكل</option><option value="ok">حاضر</option><option value="late">متأخر</option><option value="absent">غائب</option></select></div>
+    <div class="fld">من تاريخ<input type="date" id="from"></div>
+    <div class="fld">إلى تاريخ<input type="date" id="to"></div>
+    <div class="sp"></div>
+    <div class="fld">بداية الدوام<input type="time" id="s_start" value="09:00"></div>
+    <div class="fld">ساعات الدوام<input type="number" id="s_h" value="8" min="1" max="16"></div>
+    <div class="fld">سماحية (دقيقة)<input type="number" id="s_g" value="15" min="0" max="120"></div>
+    <button id="reset">مسح الفلاتر</button>
+  </div>
+  <div class="kpis" id="kpis"></div>
+  <div class="charts">
+    <div class="card"><h3>الحضور اليومي</h3><div class="chb"><canvas id="c1"></canvas></div></div>
+    <div class="card"><h3>توزيع الحالات</h3><div class="chb"><canvas id="c2"></canvas></div></div>
+  </div>
+  <div class="bar card hide" id="paycfg" style="padding:12px 14px"><div class="fld">خصم ساعة التأخير (افتراضي)<input type="number" id="pc_rate" min="0" step="any"></div><div class="fld">العملة<input id="pc_cur" style="width:90px;min-width:0"></div><div class="fld">خصم الغياب<select id="pc_abs"><option value="none">بدون خصم</option><option value="day">اليوم = الراتب ÷ عدد الأيام</option></select></div><div class="fld">عدد أيام الشهر<input type="number" id="pc_div" min="1" max="31" style="width:80px;min-width:0"></div><div class="note" style="margin:0">يمكن تحديد خصم مختلف لكل موظف من تبويب "الموظفون"</div></div>
+  <div class="tabs"><button id="t1" class="act">ملخص الموظفين</button><button id="t2">السجل التفصيلي</button><button id="t3">الرواتب والخصومات</button></div>
+  <div class="card"><div class="tw" id="tbl"></div><div class="note" id="note"></div></div>
+</div>
+<div id="ros" class="hide"></div>
+<div class="credit">تم تطوير هذا النظام بواسطة <b>Eng. Amr Yousri</b> &nbsp;•&nbsp; للتواصل والاستفسار: <bdi dir="ltr">01067655215</bdi> &nbsp;•&nbsp; © 2026 جميع الحقوق محفوظة</div>
+</div>
+
+<div class="mod" id="mod"><div class="card" id="modc"></div></div>
+<div class="toast" id="toast"></div>
+<div id="stage"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const S={raw:[],set:{start:540,hours:8,grace:15},f:{q:'',dept:'',st:'',from:'',to:''},sort:{k:'name',d:1},tab:'emp',charts:[]};
+const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){toast('تعذر الحفظ التلقائي');return false}}};
+S.ros=LS.get('att_ros',[]);S.pc=LS.get('att_pc',{rate:0,cur:'ج.م',abs:'none',div:30});S.view='dash';
+S.raw=LS.get('att_raw',[]).map(a=>({id:a[0],name:a[1],dept:a[2],date:a[3],inM:a[4],outM:a[5]}));
+const saveRos=()=>LS.set('att_ros',S.ros),savePc=()=>LS.set('att_pc',S.pc),saveRaw=()=>LS.set('att_raw',S.raw.map(r=>[r.id,r.name,r.dept,r.date,r.inM,r.outM]));
+const nid=s=>String(s||'').trim().replace(/^0+(?=\d)/,'');
+const money=v=>(Math.round(v*100)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const totals=rs=>rs.reduce((a,e)=>({sal:a.sal+e.sal,ld:a.ld+e.ld,ad:a.ad+e.ad,td:a.td+e.td,net:a.net+e.net}),{sal:0,ld:0,ad:0,td:0,net:0});
+let RT='تقرير الحضور والانصراف';
+const ST={ok:['حاضر','b-ok'],late:['متأخر','b-late'],absent:['غائب','b-abs']};
+const fmtT=m=>m==null?'—':String(Math.floor(m/60)%24).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+const fmtH=h=>h?h.toFixed(1):'0';
+const norm=s=>String(s).toLowerCase().replace(/[أإآ]/g,'ا').replace(/ة/g,'ه').replace(/[\s_\-.]+/g,' ').trim();
+const ALIAS={name:['الاسم','اسم الموظف','اسم','الموظف','name','employee name','employee'],id:['الكود','كود','كود الموظف','رقم الموظف','رقم','id','code','emp id','employee id'],dept:['القسم','قسم','الاداره','ادارة','department','dept'],date:['التاريخ','تاريخ','اليوم','date','day'],inn:['الحضور','وقت الحضور','حضور','الدخول','دخول','وقت الدخول','check in','checkin','time in','clock in','in'],out:['الانصراف','وقت الانصراف','انصراف','الخروج','خروج','وقت الخروج','check out','checkout','time out','clock out','out']};
+ALIAS.id.push('no','person id','user id','ac no','enroll number','badge');ALIAS.name.push('person name','user name');
+ALIAS.time=['date/time','datetime','date time','time','punch time','check time','punch','الوقت','التوقيت','وقت البصمة','التاريخ والوقت'];
+ALIAS.status=['status','attendance status','state','punch state','in out','الحالة','نوع البصمة','حالة البصمة'];
+ALIAS.sal=['الراتب','المرتب','الراتب الاساسي','الراتب الثابت','salary','basic salary'];
+function toast(t,ms=2600){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);if(ms)toast.t=setTimeout(()=>e.style.display='none',ms)}
+function toMin(v){if(v==null||v==='')return null;
+  if(typeof v==='number'){const f=v-Math.floor(v);return Math.round(f*1440)%1440}
+  if(v instanceof Date)return v.getHours()*60+v.getMinutes();
+  const m=String(v).match(/(\d{1,2})\s*[:.]\s*(\d{2})/);if(!m)return null;let h=+m[1];const pm=/pm|م/i.test(v),am=/am|ص/i.test(v);
+  if(pm&&h<12)h+=12;if(am&&h===12)h=0;return h*60+ +m[2]}
+function toDate(v){if(v==null||v==='')return null;
+  if(typeof v==='number'){return new Date(Math.round((Math.floor(v)-25569)*864e5)).toISOString().slice(0,10)}
+  if(v instanceof Date)return v.toISOString().slice(0,10);
+  const s=String(v);let m=s.match(/(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/);
+  if(m)return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');
+  m=s.match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/);
+  if(m){const y=m[3].length===2?'20'+m[3]:m[3];return y+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0')}
+  return null}
+function parseRows(rows){
+  if(!rows.length)throw'الشيت فارغ';
+  const keys=Object.keys(rows[0]),map={};
+  for(const f in ALIAS){const al=ALIAS[f].map(norm);
+    map[f]=keys.find(k=>al.includes(norm(k)))||keys.find(k=>al.some(a=>a.length>3&&norm(k).includes(a)))}
+  if(!map.name)throw'لم أجد عمود "الاسم" في الشيت';
+  const raw=(!map.inn&&!map.out)||map.inn===map.out,tk=raw?(map.time||map.date):null;
+  if(!raw&&!map.date)throw'لم أجد عمود "التاريخ" في الشيت';
+  if(raw&&!tk)throw'لم أجد أعمدة الحضور/الانصراف ولا عمود وقت البصمة';
+  const dept=r=>map.dept?String(r[map.dept]??'').trim()||'غير محدد':'غير محدد',idv=r=>map.id?String(r[map.id]??'').trim():'';
+  let out=[];
+  if(!raw){
+    for(const r of rows){const name=String(r[map.name]??'').trim();if(!name)continue;
+      const date=toDate(r[map.date]);if(!date)continue;
+      out.push({name,id:idv(r),dept:dept(r),date,inM:toMin(r[map.inn]),outM:toMin(r[map.out])})}
+  }else{
+    const IN=/in|دخول|حضور|^0$|^i$/i,OUT=/out|خروج|انصراف|^1$|^o$/i,g=new Map();
+    for(const r of rows){const name=String(r[map.name]??'').trim();if(!name)continue;
+      let date,m;
+      if(map.date&&map.time&&map.date!==map.time){date=toDate(r[map.date]);m=toMin(r[map.time])}
+      else{const a=r[tk];if(typeof a==='number'){date=toDate(a);m=toMin(a)}else{const s=String(a??'');date=toDate(s);const t=s.match(/\d{1,2}:\d{2}(?::\d{2})?\s*(?:[ap]m|[صم])?/i);m=t?toMin(t[0]):null}}
+      if(!date||m==null)continue;
+      const id=idv(r),k=(nid(id)||norm(name))+'|'+date;let o=g.get(k);
+      if(!o)g.set(k,o={name,id,dept:dept(r),date,p:[]});
+      o.p.push({m,s:map.status?String(r[map.status]??''):''})}
+    for(const o of g.values()){o.p.sort((a,b)=>a.m-b.m);const f=o.p[0],l=o.p[o.p.length-1];let inM=f.m,outM=null;
+      if(l.m-f.m>=60)outM=l.m;else if(OUT.test(f.s)||(!IN.test(f.s)&&f.m>=780)){inM=null;outM=f.m}
+      out.push({name:o.name,id:o.id,dept:o.dept,date:o.date,inM,outM})}
+    const dates=[...new Set([...g.values()].map(o=>o.date))],em=new Map();
+    g.forEach(o=>{const k=nid(o.id)||norm(o.name);if(!em.has(k))em.set(k,o)});
+    em.forEach((o,k)=>dates.forEach(d=>{if(!g.has(k+'|'+d))out.push({name:o.name,id:o.id,dept:o.dept,date:d,inM:null,outM:null})}));
+    out.sort((a,b)=>a.date.localeCompare(b.date))}
+  if(!out.length)throw'لم أجد صفوفاً صالحة (تأكد من الاسم والتاريخ/الوقت)';
+  out.fmt=raw?'raw':'daily';return out}
+function derive(r){const s=S.set;let st,h=0,lm=0;
+  if(r.inM==null&&r.outM==null)st='absent';
+  else{st=(r.inM!=null&&r.inM>s.start+s.grace)?'late':'ok';if(r.inM!=null)lm=Math.max(0,r.inM-s.start);
+    if(r.inM!=null&&r.outM!=null){let d=r.outM-r.inM;if(d<0)d+=1440;h=d/60}}
+  return{...r,st,h,lm,ot:Math.max(0,h-s.hours),noOut:st!=='absent'&&r.outM==null}}
+function filtered(ns){const f=S.f,q=norm(f.q);
+  return S.raw.map(derive).filter(r=>(!q||norm(r.name).includes(q)||norm(r.id).includes(q))&&(!f.dept||r.dept===f.dept)&&(ns||!f.st||r.st===f.st)&&(!f.from||r.date>=f.from)&&(!f.to||r.date<=f.to))}
+function aggEmp(recs){const m=new Map();
+  for(const r of recs){const k=r.id||r.name;let e=m.get(k);
+    if(!e){e={id:r.id,name:r.name,dept:r.dept,days:0,late:0,absent:0,h:0,ot:0,ins:[],n:0,recs:[]};m.set(k,e)}
+    e.n++;e.recs.push(r);
+    if(r.st==='absent')e.absent++;else{e.days++;if(r.st==='late')e.late++;if(r.inM!=null)e.ins.push(r.inM)}
+    e.h+=r.h;e.ot+=r.ot}
+  return[...m.values()].map(e=>({...e,rate:e.n?e.days/e.n*100:0,avgIn:e.ins.length?Math.round(e.ins.reduce((a,b)=>a+b,0)/e.ins.length):null}))}
+function kpi(recs,emps){const n=recs.length,ab=recs.filter(r=>r.st==='absent').length,lt=recs.filter(r=>r.st==='late').length,pr=n-ab;
+  const hs=recs.filter(r=>r.h>0);
+  return{emps:emps.length,n,rate:n?pr/n*100:0,late:lt,abs:ab,avg:hs.length?hs.reduce((a,r)=>a+r.h,0)/hs.length:0,ot:recs.reduce((a,r)=>a+r.ot,0),ok:pr-lt}}
+
+function render(){
+  const recs=filtered(),emps=aggEmp(recs),K=kpi(recs,emps);
+  $('#kpis').innerHTML=[
+    ['عدد الموظفين',K.emps,'',''],['إجمالي السجلات',K.n,'',''],['نسبة الحضور',K.rate.toFixed(1),'%','ok'],
+    ['مرات التأخير',K.late,'','late'],['أيام الغياب',K.abs,'','abs'],['متوسط ساعات العمل',K.avg.toFixed(1),'س',''],['ساعات إضافية',K.ot.toFixed(1),'س','']
+  ].map(([l,v,u,c])=>`<div class="card k ${c}"><div class="l">${l}</div><div class="v">${v} <small>${u}</small></div></div>`).join('');
+  $('#sub').textContent=`${S.raw.length} سجل • ${new Set(S.raw.map(r=>r.name)).size} موظف`;
+  const pay=S.tab==='pay';$('.charts').classList.toggle('hide',pay);$('#paycfg').classList.toggle('hide',!pay);if(pay)payKpi();else charts(recs,K);table(recs,emps);
+}
+function charts(recs,K){
+  S.charts.forEach(c=>c.destroy());S.charts=[];
+  const cs=getComputedStyle(document.documentElement),tx=cs.getPropertyValue('--mut').trim(),gd=cs.getPropertyValue('--bd').trim();
+  Chart.defaults.font.family="Cairo,sans-serif";Chart.defaults.color=tx;
+  const d={};recs.forEach(r=>{(d[r.date]=d[r.date]||{ok:0,late:0,absent:0})[r.st]++});
+  const days=Object.keys(d).sort().slice(-31);
+  S.charts.push(new Chart($('#c1'),{type:'bar',data:{labels:days.map(x=>x.slice(5)),datasets:[
+    {label:'حاضر',data:days.map(x=>d[x].ok),backgroundColor:'#10b981'},
+    {label:'متأخر',data:days.map(x=>d[x].late),backgroundColor:'#f59e0b'},
+    {label:'غائب',data:days.map(x=>d[x].absent),backgroundColor:'#ef4444'}]},
+    options:{maintainAspectRatio:false,scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,grid:{color:gd},ticks:{precision:0}}},plugins:{legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:8}}}}}));
+  S.charts.push(new Chart($('#c2'),{type:'doughnut',data:{labels:['حاضر','متأخر','غائب'],datasets:[{data:[K.ok,K.late,K.abs],backgroundColor:['#10b981','#f59e0b','#ef4444'],borderWidth:0}]},
+    options:{maintainAspectRatio:false,cutout:'68%',plugins:{legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:8}}}}}))}
+const COLS=[['name','الموظف'],['dept','القسم'],['days','أيام الحضور'],['late','التأخير'],['absent','الغياب'],['rate','نسبة الحضور'],['avgIn','متوسط الحضور'],['h','ساعات العمل'],['ot','إضافي']];
+function table(recs,emps){
+  $('#t1').classList.toggle('act',S.tab==='emp');$('#t2').classList.toggle('act',S.tab==='rec');$('#t3').classList.toggle('act',S.tab==='pay');if(S.tab==='pay'){payTable();return}
+  let h='';
+  if(S.tab==='emp'){
+    const {k,d}=S.sort;emps.sort((a,b)=>{const x=a[k],y=b[k];return(typeof x==='string'?x.localeCompare(y,'ar'):(x??-1)-(y??-1))*d});
+    h=`<table><thead><tr>${COLS.map(([c,l])=>`<th data-k="${c}">${l}${k===c?(d>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead><tbody>`+
+    emps.map((e,i)=>`<tr class="cl" data-i="${i}"><td class="nm"><b>${esc(e.name)}</b><span>${esc(e.id)}</span></td><td>${esc(e.dept)}</td><td>${e.days}</td><td>${e.late?`<span class="bdg b-late">${e.late}</span>`:0}</td><td>${e.absent?`<span class="bdg b-abs">${e.absent}</span>`:0}</td><td><div class="rate"><i><u style="width:${e.rate}%"></u></i>${e.rate.toFixed(0)}%</div></td><td>${fmtT(e.avgIn)}</td><td>${fmtH(e.h)}</td><td>${fmtH(e.ot)}</td></tr>`).join('')+'</tbody></table>';
+    $('#note').textContent=`اضغط على أي موظف لعرض سجله الكامل — ${emps.length} موظف`;
+    S.emps=emps}
+  else{
+    const rs=[...recs].sort((a,b)=>b.date.localeCompare(a.date)||a.name.localeCompare(b.name,'ar'));
+    h=recTable(rs.slice(0,500),true);
+    $('#note').textContent=rs.length>500?`يعرض أول 500 من ${rs.length} سجل — استخدم الفلاتر للتضييق`:`${rs.length} سجل`}
+  $('#tbl').innerHTML=h||'<p class="note">لا توجد نتائج</p>'}
+function recTable(rs,withName){
+  return`<table><thead><tr><th>التاريخ</th>${withName?'<th>الموظف</th><th>القسم</th>':''}<th>الحضور</th><th>الانصراف</th><th>الساعات</th><th>التأخير (د)</th><th>الحالة</th></tr></thead><tbody>`+
+  rs.map(r=>`<tr><td>${r.date}</td>${withName?`<td class="nm"><b>${esc(r.name)}</b><span>${esc(r.id)}</span></td><td>${esc(r.dept)}</td>`:''}<td>${fmtT(r.inM)}</td><td>${r.noOut?'<span class="bdg b-late">لم يسجل</span>':fmtT(r.outM)}</td><td>${fmtH(r.h)}</td><td>${r.lm>S.set.grace?r.lm:'—'}</td><td><span class="bdg ${ST[r.st][1]}">${ST[r.st][0]}</span></td></tr>`).join('')+'</tbody></table>'}
+function openEmp(e){
+  const rs=[...e.recs].sort((a,b)=>b.date.localeCompare(a.date));
+  $('#modc').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:start;gap:10px"><div><h3 style="font-size:18px;margin:0">${esc(e.name)}</h3><div class="note">${esc(e.dept)} ${e.id?'• '+esc(e.id):''}</div></div><button id="cl">✕</button></div>
+  <div class="kpis" style="margin:12px 0">${[['الحضور',e.days],['التأخير',e.late],['الغياب',e.absent],['نسبة الحضور',e.rate.toFixed(0)+'%'],['ساعات العمل',fmtH(e.h)],['متوسط الحضور',fmtT(e.avgIn)]].map(([l,v])=>`<div class="card k" style="padding:10px 12px"><div class="l">${l}</div><div class="v" style="font-size:20px">${v}</div></div>`).join('')}</div>
+  <div class="tw">${recTable(rs,false)}</div>`;
+  $('#mod').classList.add('on');$('#cl').onclick=()=>$('#mod').classList.remove('on')}
+
+function showData(){
+  const ds=S.raw.map(r=>r.date).sort();
+  S.f={q:'',dept:'',st:'',from:'',to:''};
+  $('#from').min=$('#to').min=ds[0];$('#from').max=$('#to').max=ds[ds.length-1];
+  ['q','from','to'].forEach(i=>$('#'+i).value='');$('#st').value='';
+  $('#dept').innerHTML='<option value="">كل الأقسام</option>'+[...new Set([...S.raw.map(r=>r.dept),...S.ros.map(e=>e.dept).filter(Boolean)])].sort().map(d=>`<option>${esc(d)}</option>`).join('');
+  $('#pdf').disabled=$('#pdf2').disabled=false;setView('dash')}
+function sheetRows(ws){const a=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
+  const all=Object.values(ALIAS).flat().map(norm);let hi=0,best=-1;
+  for(let i=0;i<Math.min(a.length,20);i++){const c=a[i].filter(x=>x!==''&&all.includes(norm(x))).length;if(c>best){best=c;hi=i}}
+  if(best<2)hi=0;
+  const hd=(a[hi]||[]).map((x,j)=>String(x).trim()||('col'+j));
+  return a.slice(hi+1).filter(r=>r.some(x=>x!=='')).map(r=>Object.fromEntries(hd.map((k,j)=>[k,r[j]??''])))}
+async function readFile(f){
+  try{
+    for(let i=0;i<25&&typeof XLSX==='undefined';i++)await new Promise(r=>setTimeout(r,150));
+    if(typeof XLSX==='undefined')throw new Error('مكتبة قراءة Excel لم تُحمَّل — ملفات البرنامج ناقصة، أعد تثبيت آخر نسخة');
+    const buf=await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=()=>no(r.error);r.readAsArrayBuffer(f)});
+    let wb;try{wb=XLSX.read(buf,{type:'array'})}catch(e1){wb=XLSX.read(new TextDecoder().decode(buf),{type:'string'})}
+    let err='لم أجد بيانات في الملف';
+    for(const n of wb.SheetNames){let rows;try{rows=sheetRows(wb.Sheets[n])}catch(e){continue}
+      try{startImport(parseRows(rows));return}catch(e){err=e}}
+    toast(String((err&&err.message)||err),6000)}
+  catch(e){console.error(e);toast('تعذر قراءة الملف: '+((e&&e.message)||e),9000)}}
+/* ---------- PDF ---------- */
+function repPage(inner,n,t,meta){return`<div style="width:1122px;height:793px;background:#fff;color:#1b2033;font-family:Cairo,sans-serif;direction:rtl;padding:26px 38px;position:relative;overflow:hidden;font-size:13px">
+<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #5b5bf0;padding-bottom:8px;margin-bottom:12px"><div style="font-size:20px;font-weight:800">${RT}</div><div style="color:#6b7390;font-size:12px">${meta}</div></div>${inner}
+<div style="position:absolute;bottom:14px;left:38px;right:38px;display:flex;justify-content:space-between;color:#6b7390;font-size:11px"><span>تاريخ الإصدار: ${new Date().toISOString().slice(0,10)}</span><span style="opacity:.75">Eng. Amr Yousri • 01067655215 ©</span><span>صفحة ${n} من ${t}</span></div></div>`}
+const TH='style="background:#5b5bf0;color:#fff;padding:7px 8px;text-align:right;font-weight:600"';
+const TD='style="padding:5px 8px;border-bottom:1px solid #e6e8f0;height:29px;white-space:nowrap"';
+const tbl=(head,rows)=>`<table style="width:100%;border-collapse:collapse;min-width:0"><thead><tr>${head.map(h=>`<th ${TH}>${h}</th>`).join('')}</tr></thead><tbody>${rows.map((r,i)=>`<tr style="background:${i%2?'#f7f8fd':'#fff'}">${r.map(c=>`<td ${TD}>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+const badge=st=>{const c={ok:['#10b981','حاضر'],late:['#d97706','متأخر'],absent:['#ef4444','غائب']}[st];return`<b style="color:${c[0]}">${c[1]}</b>`};
+async function exportPDF(){
+  const recs=filtered();if(!recs.length){toast('لا توجد بيانات للتصدير');return}
+  const emps=aggEmp(recs).sort((a,b)=>a.name.localeCompare(b.name,'ar')),K=kpi(recs,emps);
+  const ds=recs.map(r=>r.date).sort(),meta=`الفترة: ${ds[0]} إلى ${ds[ds.length-1]}`+(S.f.dept?` • القسم: ${esc(S.f.dept)}`:'')+(S.f.st?` • الحالة: ${ST[S.f.st][0]}`:'');
+  const rs=[...recs].sort((a,b)=>a.date.localeCompare(b.date)||a.name.localeCompare(b.name,'ar'));
+  const CAP=600,rsC=rs.slice(0,CAP);
+  const kb=(l,v,c)=>`<div style="flex:1;border:1px solid #e6e8f0;border-radius:12px;padding:8px 12px"><div style="color:#6b7390;font-size:11px">${l}</div><div style="font-size:22px;font-weight:800;color:${c||'#1b2033'}">${v}</div></div>`;
+  const kp=`<div style="display:flex;gap:10px;margin-bottom:12px">${kb('الموظفون',K.emps)}${kb('السجلات',K.n)}${kb('نسبة الحضور',K.rate.toFixed(1)+'%','#10b981')}${kb('التأخير',K.late,'#d97706')}${kb('الغياب',K.abs,'#ef4444')}${kb('متوسط الساعات',K.avg.toFixed(1))}${kb('إضافي (س)',K.ot.toFixed(1))}</div>`;
+  const eHead=['الموظف','القسم','الحضور','التأخير','الغياب','نسبة الحضور','متوسط الحضور','ساعات العمل','إضافي'];
+  const eRow=e=>[`<b>${esc(e.name)}</b> <span style="color:#6b7390;font-size:11px">${esc(e.id)}</span>`,esc(e.dept),e.days,e.late,e.absent,e.rate.toFixed(0)+'%',fmtT(e.avgIn),fmtH(e.h),fmtH(e.ot)];
+  const pages=[];const first=emps.slice(0,6),rest=emps.slice(6);
+  pages.push(kp+`<div style="font-weight:700;margin:4px 0 6px">ملخص الموظفين</div>`+tbl(eHead,first.map(eRow)));
+  for(let i=0;i<rest.length;i+=17)pages.push(tbl(eHead,rest.slice(i,i+17).map(eRow)));
+  const dHead=['التاريخ','الموظف','القسم','الحضور','الانصراف','الساعات','الحالة'];
+  for(let i=0,first=true;i<rsC.length;first=false){const n=first?16:17;
+    pages.push((first?`<div style="font-weight:700;margin:0 0 6px">السجل التفصيلي${rs.length>CAP?` (أول ${CAP} من ${rs.length} سجل)`:''}</div>`:'')+tbl(dHead,rsC.slice(i,i+n).map(r=>[r.date,esc(r.name),esc(r.dept),fmtT(r.inM),r.noOut?'<span style="color:#d97706">لم يسجل</span>':fmtT(r.outM),fmtH(r.h),badge(r.st)])));i+=n}
+  const T=pages.length,stage=$('#stage');$('#pdf').disabled=true;
+  try{
+    await document.fonts.ready;
+    const doc=new jspdf.jsPDF({orientation:'l',unit:'pt',format:'a4'});
+    const W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight();
+    for(let i=0;i<T;i++){
+      toast(`جاري تجهيز التقرير ${i+1}/${T}`,0);
+      stage.innerHTML=repPage(pages[i],i+1,T,meta);
+      const cv=await html2canvas(stage.firstElementChild,{scale:1.6,backgroundColor:'#ffffff'});
+      if(i)doc.addPage();doc.addImage(cv.toDataURL('image/jpeg',.92),'JPEG',0,0,W,H)}
+    stage.innerHTML='';
+    const name='attendance-report-'+new Date().toISOString().slice(0,10)+'.pdf',blob=doc.output('blob');
+    let dl=null;try{dl=window.claude&&await claude.use('downloads')}catch(e){}
+    if(dl){try{await dl.save({filename:name,data:blob});toast('تم حفظ التقرير')}catch(e){toast(e&&e.code==='declined'?'تم إلغاء الحفظ':'تعذر الحفظ')}}
+    else{doc.save(name);toast('تم إنشاء التقرير')}
+  }catch(e){toast('حدث خطأ أثناء إنشاء الـ PDF',4000)}
+  $('#pdf').disabled=false}
+
+/* ---------- events ---------- */
+$('#up').onclick=()=>$('#file').click();
+$('#empty').onclick=()=>$('#file').click();
+$('#file').onchange=e=>{if(e.target.files[0])readFile(e.target.files[0]);e.target.value=''};
+['dragover','dragenter'].forEach(ev=>document.addEventListener(ev,e=>{e.preventDefault();$('#empty').classList.add('on')}));
+['dragleave','drop'].forEach(ev=>document.addEventListener(ev,e=>{e.preventDefault();$('#empty').classList.remove('on')}));
+document.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)readFile(f)});
+$('#pdf').onclick=exportPDF;$('#pdf2').onclick=exportPay;
+const bind=(id,k)=>$('#'+id).addEventListener('input',e=>{S.f[k]=e.target.value;render()});
+bind('q','q');bind('dept','dept');bind('st','st');bind('from','from');bind('to','to');
+$('#reset').onclick=()=>{S.f={q:'',dept:'',st:'',from:'',to:''};['q','dept','st','from','to'].forEach(i=>$('#'+i).value='');render()};
+function setCfg(){const [h,m]=($('#s_start').value||'09:00').split(':');S.set={start:+h*60+ +m,hours:+$('#s_h').value||8,grace:Math.max(0,+$('#s_g').value||0)};LS.set('att_set',S.set);if(S.raw.length)render()}
+['s_start','s_h','s_g'].forEach(i=>$('#'+i).addEventListener('input',setCfg));
+$('#t1').onclick=()=>{S.tab='emp';render()};$('#t2').onclick=()=>{S.tab='rec';render()};$('#t3').onclick=()=>{S.tab='pay';render()};
+$('#tbl').addEventListener('click',e=>{
+  const th=e.target.closest('th[data-k]');if(th){const k=th.dataset.k;S.sort=S.sort.k===k?{k,d:-S.sort.d}:{k,d:1};render();return}
+  const tr=e.target.closest('tr.cl');if(tr&&S.emps)openEmp(S.emps[+tr.dataset.i])});
+$('#mod').onclick=e=>{if(e.target.id==='mod'){PEND=null;$('#mod').classList.remove('on')}};
+/* ---------- employees, import check, payroll ---------- */
+function findEmp(id,name,list=S.ros){const i=nid(id);if(i){const e=list.find(e=>nid(e.id)===i);if(e)return e}
+  const n=norm(name);return list.find(e=>norm(e.name)===n&&(!i||!nid(e.id)))}
+let PEND=null;
+function startImport(recs){const m=new Map();recs.forEach(r=>{const k=nid(r.id)||norm(r.name);if(!m.has(k))m.set(k,r)});
+  const ex=[],nw=[];m.forEach(r=>(findEmp(r.id,r.name)?ex:nw).push(r));PEND={recs,ex,nw,fmt:recs.fmt};
+  const ds=recs.map(r=>r.date).sort(),has=S.raw.length>0;
+  $('#modc').innerHTML=`<h3 style="font-size:18px;margin:0 0 6px">ملخص الملف المرفوع</h3>
+  <div class="note" style="margin:0 0 12px">${recs.fmt==='raw'?'سجل بصمات خام (تم تجميع البصمات يوميًا، والغياب = يوم عمل ظهر فيه أي موظف بدون بصمة)':'تقرير حضور يومي'} • ${recs.length} سجل • من ${ds[0]} إلى ${ds[ds.length-1]}</div>
+  <div class="kpis"><div class="card k"><div class="l">موظفين في الملف</div><div class="v">${ex.length+nw.length}</div></div><div class="card k ok"><div class="l">موجودين بالفعل</div><div class="v">${ex.length}</div></div><div class="card k late"><div class="l">موظفين جدد</div><div class="v">${nw.length}</div></div></div>
+  <div class="note" style="color:var(--tx)">${nw.length?`تمت إضافة الموظفين الجدد إلى تبويب "الموظفون" عند التأكيد: ${nw.slice(0,12).map(r=>esc(r.name)+(r.id?' ('+esc(r.id)+')':'')).join('، ')}${nw.length>12?' ...':''}<br>لا تنس تحديد مرتباتهم.`:'لا يوجد موظفين جدد.'}</div>
+  ${has?'<div class="note">الدمج: السجلات المطابقة (نفس الموظف ونفس اليوم) تتحدث بالجديد وباقي البيانات القديمة تبقى. الاستبدال: يمسح القديم بالكامل.</div>':''}
+  <div class="btns" style="margin-top:14px"><button class="pri" id="im1">${has?'دمج وتحديث البيانات':'تأكيد وعرض'}</button>${has?'<button id="im2">استبدال كل البيانات</button>':''}<button id="im0">إلغاء</button></div>`;
+  $('#mod').classList.add('on');
+  $('#im0').onclick=()=>{PEND=null;$('#mod').classList.remove('on')};
+  $('#im1').onclick=()=>applyImport(false);if(has)$('#im2').onclick=()=>applyImport(true)}
+function applyImport(rep){const P=PEND;if(!P)return;
+  P.nw.forEach(r=>S.ros.push({id:r.id,name:r.name,dept:r.dept,sal:0,rate:''}));
+  P.ex.forEach(r=>{const e=findEmp(r.id,r.name);if(e&&!e.id&&r.id)e.id=r.id});
+  const key=r=>(nid(r.id)||norm(r.name))+'|'+r.date;
+  if(rep)S.raw=P.recs;else{const m=new Map(S.raw.map(r=>[key(r),r]));P.recs.forEach(r=>m.set(key(r),r));S.raw=[...m.values()]}
+  saveRos();saveRaw();PEND=null;$('#mod').classList.remove('on');showData();
+  toast(P.nw.length?`تم تحديث البيانات وإضافة ${P.nw.length} موظف جديد إلى خانة الموظفين`:'تم تحديث البيانات',4500)}
+function setView(v){S.view=v;const has=S.raw.length>0;$('#ros').classList.toggle('hide',v!=='ros');$('#app').classList.toggle('hide',v!=='dash'||!has);$('#empty').classList.toggle('hide',v!=='dash'||has);
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('act',b.dataset.v===v));
+  if(v==='ros')rosView();else if(has)render()}
+function rosView(){const I=(i,f,v,x='')=>`<input data-i="${i}" data-f="${f}" value="${esc(v)}" ${x}>`;
+  $('#ros').innerHTML=`<div class="card"><div class="bar" style="margin:0 0 10px"><h3 style="margin:0">الموظفون (${S.ros.length})</h3><div class="sp"></div><button id="radd">+ إضافة موظف</button><button id="rimp">استيراد من Excel</button></div>
+  <div class="tw">${S.ros.length?`<table><thead><tr><th>الكود</th><th>الاسم</th><th>القسم</th><th>الراتب الثابت (شهري)</th><th>خصم ساعة التأخير (اختياري)</th><th></th></tr></thead><tbody>${S.ros.map((e,i)=>`<tr><td style="width:110px">${I(i,'id',e.id)}</td><td>${I(i,'name',e.name)}</td><td>${I(i,'dept',e.dept)}</td><td style="width:150px">${I(i,'sal',e.sal||'','type="number" min="0"')}</td><td style="width:170px">${I(i,'rate',e.rate,'type="number" min="0" placeholder="الافتراضي"')}</td><td><button data-del="${i}">حذف</button></td></tr>`).join('')}</tbody></table>`:'<p class="note">لا يوجد موظفين بعد. ارفع شيت الحضور وسيتم إضافتهم تلقائيًا، أو أضف موظفًا بنفسك.</p>'}</div>
+  <div class="note">التعديلات تُحفظ تلقائيًا. إذا تركت "خصم ساعة التأخير" فارغًا يُستخدم الخصم الافتراضي من تبويب الرواتب.</div></div>`}
+async function impRoster(f){try{const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});
+  const rows=sheetRows(wb.Sheets[wb.SheetNames[0]]),keys=Object.keys(rows[0]||{}),map={};
+  for(const k of['id','name','dept','sal']){const al=ALIAS[k].map(norm);map[k]=keys.find(c=>al.includes(norm(c)))}
+  if(!map.name)throw 0;let up=0,nw=0;
+  for(const r of rows){const name=String(r[map.name]).trim();if(!name)continue;const id=map.id?String(r[map.id]).trim():'',sal=map.sal?+r[map.sal]||0:0,dept=map.dept?String(r[map.dept]).trim():'';
+    const e=findEmp(id,name);if(e){if(sal)e.sal=sal;if(dept)e.dept=dept;if(id&&!e.id)e.id=id;up++}else{S.ros.push({id,name,dept:dept||'غير محدد',sal,rate:''});nw++}}
+  saveRos();rosView();toast(`موجودين وتم تحديثهم: ${up} • جدد تمت إضافتهم: ${nw}`,5000)}catch(e){toast('تعذر قراءة ملف الموظفين (تأكد من وجود عمود الاسم)',4000)}}
+function payRows(){const P=S.pc,d0=+P.rate||0;
+  return aggEmp(filtered(true)).map(e=>{const r=findEmp(e.id,e.name)||{},sal=+r.sal||0,rt=(r.rate===''||r.rate==null)?d0:+r.rate;
+    const lh=e.recs.reduce((a,x)=>a+(x.st==='late'?x.lm:0),0)/60,ld=lh*rt,ad=P.abs==='day'?e.absent*sal/(+P.div||30):0;
+    return{...e,sal,lh,ld,ad,td:ld+ad,net:Math.max(0,sal-ld-ad),reg:!!r.name}}).sort((a,b)=>a.name.localeCompare(b.name,'ar'))}
+function payKpi(){const rs=payRows(),T=totals(rs),c=esc(S.pc.cur);
+  $('#kpis').innerHTML=[['عدد الموظفين',rs.length,'',''],['إجمالي الرواتب',money(T.sal),c,''],['خصم التأخير',money(T.ld),c,'late'],['خصم الغياب',money(T.ad),c,'late'],['إجمالي الخصومات',money(T.td),c,'abs'],['صافي الرواتب',money(T.net),c,'ok']].map(([l,v,u,k])=>`<div class="card k ${k}"><div class="l">${l}</div><div class="v" style="font-size:22px">${v} <small>${u}</small></div></div>`).join('')}
+const PH=['الموظف','القسم','الراتب','الحضور','التأخير','ساعات التأخير','خصم التأخير','الغياب','خصم الغياب','إجمالي الخصم','الصافي'];
+function payTable(){const rs=payRows(),T=totals(rs);
+  $('#tbl').innerHTML=rs.length?`<table><thead><tr>${PH.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rs.map(e=>`<tr><td class="nm"><b>${esc(e.name)}</b><span>${esc(e.id)}${e.sal?'':' • <u style="color:var(--warn)">بدون راتب</u>'}</span></td><td>${esc(e.dept)}</td><td>${money(e.sal)}</td><td>${e.days}</td><td>${e.late}</td><td>${e.lh.toFixed(2)}</td><td>${money(e.ld)}</td><td>${e.absent}</td><td>${money(e.ad)}</td><td><b style="color:var(--bad)">${money(e.td)}</b></td><td><b>${money(e.net)}</b></td></tr>`).join('')}<tr style="font-weight:700;background:var(--ac2)"><td colspan="2">الإجمالي</td><td>${money(T.sal)}</td><td colspan="3"></td><td>${money(T.ld)}</td><td></td><td>${money(T.ad)}</td><td>${money(T.td)}</td><td>${money(T.net)}</td></tr></tbody></table>`:'<p class="note">لا توجد نتائج</p>';
+  const ms=new Set(filtered(true).map(r=>r.date.slice(0,7)));
+  $('#note').textContent=`المبالغ بـ ${S.pc.cur} • الراتب شهري، فاختر شهرًا واحدًا في فلتر التاريخ${ms.size>1?' (⚠ الفترة الحالية تغطي أكثر من شهر)':''} • فلتر الحالة لا يؤثر على الرواتب • التأخير يُحسب من بداية الدوام للسجلات التي تعدّت السماحية`}
+async function pagesToPDF(pages,meta,name){const T=pages.length,stage=$('#stage');$('#pdf').disabled=$('#pdf2').disabled=true;
+  try{await document.fonts.ready;const doc=new jspdf.jsPDF({orientation:'l',unit:'pt',format:'a4'}),W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight();
+    for(let i=0;i<T;i++){toast(`جاري تجهيز التقرير ${i+1}/${T}`,0);stage.innerHTML=repPage(pages[i],i+1,T,meta);
+      const cv=await html2canvas(stage.firstElementChild,{scale:1.6,backgroundColor:'#ffffff'});if(i)doc.addPage();doc.addImage(cv.toDataURL('image/jpeg',.92),'JPEG',0,0,W,H)}
+    stage.innerHTML='';doc.save(name);toast('تم إنشاء التقرير')}catch(e){toast('حدث خطأ أثناء إنشاء الـ PDF',4000)}
+  $('#pdf').disabled=$('#pdf2').disabled=false}
+async function exportPay(){const rs=payRows();if(!rs.length){toast('لا توجد بيانات للتصدير');return}
+  const T=totals(rs),cu=esc(S.pc.cur),ds=filtered(true).map(r=>r.date).sort();
+  const meta=`الفترة: ${ds[0]} إلى ${ds[ds.length-1]}`+(S.f.dept?` • القسم: ${esc(S.f.dept)}`:'')+` • العملة: ${cu}`;
+  const kb=(l,v,c)=>`<div style="flex:1;border:1px solid #e6e8f0;border-radius:12px;padding:8px 12px"><div style="color:#6b7390;font-size:11px">${l}</div><div style="font-size:19px;font-weight:800;color:${c||'#1b2033'}">${v}</div></div>`;
+  const kp=`<div style="display:flex;gap:10px;margin-bottom:12px">${kb('الموظفون',rs.length)}${kb('إجمالي الرواتب',money(T.sal))}${kb('خصم التأخير',money(T.ld),'#d97706')}${kb('خصم الغياب',money(T.ad),'#d97706')}${kb('إجمالي الخصومات',money(T.td),'#ef4444')}${kb('صافي الرواتب',money(T.net),'#10b981')}</div>`;
+  const row=e=>[`<b>${esc(e.name)}</b> <span style="color:#6b7390;font-size:11px">${esc(e.id)}</span>`,esc(e.dept),money(e.sal),e.days,e.late,e.lh.toFixed(2),money(e.ld),e.absent,money(e.ad),`<b style="color:#ef4444">${money(e.td)}</b>`,`<b>${money(e.net)}</b>`];
+  const body=rs.map(row);body.push(['<b>الإجمالي</b>','',`<b>${money(T.sal)}</b>`,'','','',`<b>${money(T.ld)}</b>`,'',`<b>${money(T.ad)}</b>`,`<b>${money(T.td)}</b>`,`<b>${money(T.net)}</b>`]);
+  const pages=[kp+tbl(PH,body.slice(0,7))];for(let i=7;i<body.length;i+=16)pages.push(tbl(PH,body.slice(i,i+16)));
+  RT='تقرير الرواتب والخصومات';await pagesToPDF(pages,meta,'payroll-report-'+new Date().toISOString().slice(0,10)+'.pdf');RT='تقرير الحضور والانصراف'}
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>setView(b.dataset.v));
+$('#ros').addEventListener('input',e=>{const t=e.target,i=t.dataset.i;if(i==null)return;const f=t.dataset.f;S.ros[i][f]=(f==='sal'||f==='rate')?(t.value===''?(f==='rate'?'':0):+t.value):t.value;saveRos()});
+$('#ros').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.id==='radd'){S.ros.unshift({id:'',name:'',dept:'',sal:0,rate:''});saveRos();rosView()}
+  else if(b.id==='rimp')$('#rfile').click();
+  else if(b.dataset.del!=null&&confirm('حذف هذا الموظف من القائمة؟')){S.ros.splice(+b.dataset.del,1);saveRos();rosView()}});
+$('#rfile').onchange=e=>{if(e.target.files[0])impRoster(e.target.files[0]);e.target.value=''};
+const spc=()=>{S.pc={rate:+$('#pc_rate').value||0,cur:$('#pc_cur').value,abs:$('#pc_abs').value,div:+$('#pc_div').value||30};savePc();if(S.raw.length)render()};
+$('#pc_rate').value=S.pc.rate||'';$('#pc_cur').value=S.pc.cur;$('#pc_abs').value=S.pc.abs;$('#pc_div').value=S.pc.div;
+['pc_rate','pc_cur','pc_abs','pc_div'].forEach(i=>$('#'+i).addEventListener('input',spc));
+{const sv=LS.get('att_set',null);if(sv){S.set=sv;$('#s_start').value=fmtT(sv.start);$('#s_h').value=sv.hours;$('#s_g').value=sv.grace}}
+if(S.raw.length)showData();else setView('dash');
+window.addEventListener('load',()=>{if([typeof XLSX,typeof Chart,typeof jspdf,typeof html2canvas].includes('undefined'))toast('تنبيه: ملفات المكتبات المرفقة ناقصة، أعد تثبيت آخر نسخة من البرنامج',9000)});
+
+</script>
+</body>
+</html>
