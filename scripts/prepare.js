@@ -10,6 +10,7 @@ function pick(name, candidates) {
   const f = candidates.map(nm).find(fs.existsSync);
   if (!f) throw new Error(`Missing ${name} (looked for ${candidates.join(', ')}). Run: npm install`);
   fs.copyFileSync(f, path.join(out, name));
+  if (fs.statSync(path.join(out, name)).size < 5000) throw new Error(`${name} looks empty or corrupted`);
 }
 pick('xlsx.js', ['xlsx/dist/xlsx.full.min.js']);
 pick('chart.js', ['chart.js/dist/chart.umd.js', 'chart.js/dist/chart.umd.min.js']);
